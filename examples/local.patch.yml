@@ -1,0 +1,16 @@
+# Mount the bar from this checkout, without installing the package:
+#
+#   dsh web --patch <this file> --port 3081
+#
+# `--patch` overlays insert their rows over the composed profile, and a
+# relative plugin name resolves against this file's directory, so the row
+# below loads `src/index.js` straight from the working tree.
+#
+# `force` is only needed when the target stream is not a terminal: the bar
+# checks `isTTY` and stays silent in captured logs and CI output.
+
+- insert:
+    - id: terminal-startup-bar
+      name: ../src/index.js
+      config:
+        force: true

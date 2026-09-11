@@ -1,0 +1,15 @@
+# The dsh-terminal-startup-bar bundle layer: one row, inserted over the
+# bundles a profile lists before this one. The row carries no config, so a
+# profile that wants different text, a different repaint period, or the bar on
+# stdout overrides these keys in its own cordis.patch.yml.
+#
+# `enabled: false` here is the switch a deployment uses to keep the package
+# installed but silent:
+#
+#   - id: terminal-startup-bar
+#     config:
+#       enabled: false
+
+- insert:
+    - id: terminal-startup-bar
+      name: dsh-terminal-startup-bar
