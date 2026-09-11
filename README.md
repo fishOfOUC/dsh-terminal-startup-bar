@@ -16,13 +16,20 @@ The line names the plugin that has been outstanding longest, how long the boot h
 
 ## Install
 
-### As a bundle layer
+A local `dsh` plugin lives at `$DSH_HOME/local-plugins/<name>` and is wired into a profile as a `link:` dependency plus one entry in `dsh.profile.bundles`. That is how `dsh` finds an out-of-tree plugin without going through a registry.
 
-The package ships `cordis.patch.yml`, so a profile can list it as a bundle. Install it into the profile and add the name to `dsh.profile.bundles` in `$DSH_HOME/profiles/<name>/package.json`:
+### 1. Clone it into the local-plugins directory
 
 ```sh
-dsh plugin --profile web add dsh-terminal-startup-bar
+git clone https://github.com/fishOfOUC/dsh-terminal-startup-bar \
+  "$DSH_HOME/local-plugins/dsh-terminal-startup-bar"
 ```
+
+`$DSH_HOME` resolves to `~/.dsh` unless the environment sets it.
+
+### 2. Declare it in the profile
+
+In `$DSH_HOME/profiles/<profile>/package.json`, append the name to `dsh.profile.bundles` and add the dependency. Bundle order is application order, so listing it last is enough — the row it inserts has no dependencies on other plugins.
 
 ```json
 {
@@ -30,15 +37,45 @@ dsh plugin --profile web add dsh-terminal-startup-bar
     "profile": {
       "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "dsh-terminal-startup-bar"]
     }
+  },
+  "dependencies": {
+    "dsh-terminal-startup-bar": "link:/absolute/path/to/.dsh/local-plugins/dsh-terminal-startup-bar"
   }
 }
 ```
 
-Bundle order is application order, so listing it last is enough — the row it inserts is an ordinary row with no dependencies, and it starts early regardless of where it sits in the list.
+### 3. Link it into the profile's `node_modules`
+
+`pnpm install` in the profile directory creates this from the `link:` dependency. To do it by hand:
+
+```sh
+ln -s "$DSH_HOME/local-plugins/dsh-terminal-startup-bar" \
+      "$DSH_HOME/profiles/<profile>/node_modules/dsh-terminal-startup-bar"
+```
+
+```powershell
+New-Item -ItemType Junction `
+  -Path "$env:DSH_HOME\profiles\<profile>\node_modules\dsh-terminal-startup-bar" `
+  -Target "$env:DSH_HOME\local-plugins\dsh-terminal-startup-bar"
+```
+
+Confirm the wiring without booting anything — the row must appear in the composed tree:
+
+```sh
+dsh web --dump-config | grep -A1 terminal-startup-bar
+```
+
+### From a registry instead
+
+```sh
+dsh plugin --profile web add dsh-terminal-startup-bar
+```
+
+Then add `"dsh-terminal-startup-bar"` to `dsh.profile.bundles` as above. The package ships `cordis.patch.yml`, so no patch file of your own is needed.
 
 ### As a row in a profile's own patch layer
 
-If the package is already a dependency, add the row to `$DSH_HOME/profiles/<name>/cordis.patch.yml`:
+To mount the plugin from a package that is already a dependency, without listing it as a bundle, put the row in `$DSH_HOME/profiles/<name>/cordis.patch.yml` yourself:
 
 ```yaml
 - insert:

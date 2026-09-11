@@ -16,13 +16,20 @@
 
 ## 安装
 
-### 作为 bundle 层
+dsh 的本地插件标准位置是 `$DSH_HOME/local-plugins/<名称>`，然后以 `link:` 依赖加一条 `dsh.profile.bundles` 记录的方式接进某个 profile。这是 dsh 在不走 registry 的情况下找到树外插件的方式。
 
-包内自带 `cordis.patch.yml`，因此可以直接作为一个 bundle 使用。先装进 profile，再把名字加进 `$DSH_HOME/profiles/<名称>/package.json` 的 `dsh.profile.bundles`：
+### 1. 克隆到 local-plugins 目录
 
 ```sh
-dsh plugin --profile web add dsh-terminal-startup-bar
+git clone https://github.com/fishOfOUC/dsh-terminal-startup-bar \
+  "$DSH_HOME/local-plugins/dsh-terminal-startup-bar"
 ```
+
+环境未设置时 `$DSH_HOME` 解析为 `~/.dsh`。
+
+### 2. 在 profile 里声明
+
+在 `$DSH_HOME/profiles/<profile>/package.json` 中把包名追加到 `dsh.profile.bundles`，并加上依赖。bundle 的先后顺序就是生效顺序，放在最后即可——它插入的行不依赖任何其他插件。
 
 ```json
 {
@@ -30,15 +37,45 @@ dsh plugin --profile web add dsh-terminal-startup-bar
     "profile": {
       "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "dsh-terminal-startup-bar"]
     }
+  },
+  "dependencies": {
+    "dsh-terminal-startup-bar": "link:/absolute/path/to/.dsh/local-plugins/dsh-terminal-startup-bar"
   }
 }
 ```
 
-bundle 的先后顺序就是生效顺序，把它放在最后即可——它插入的是一个无依赖的普通行，无论排在列表什么位置都会很早就启动。
+### 3. 链接进 profile 的 `node_modules`
+
+在 profile 目录执行 `pnpm install` 会依据 `link:` 依赖自动创建；手工创建也可以：
+
+```sh
+ln -s "$DSH_HOME/local-plugins/dsh-terminal-startup-bar" \
+      "$DSH_HOME/profiles/<profile>/node_modules/dsh-terminal-startup-bar"
+```
+
+```powershell
+New-Item -ItemType Junction `
+  -Path "$env:DSH_HOME\profiles\<profile>\node_modules\dsh-terminal-startup-bar" `
+  -Target "$env:DSH_HOME\local-plugins\dsh-terminal-startup-bar"
+```
+
+不必真的启动，就能确认接线是否正确——组合后的树里必须能看到这一行：
+
+```sh
+dsh web --dump-config | grep -A1 terminal-startup-bar
+```
+
+### 改为从 registry 安装
+
+```sh
+dsh plugin --profile web add dsh-terminal-startup-bar
+```
+
+然后按上面的方式把 `"dsh-terminal-startup-bar"` 加进 `dsh.profile.bundles`。包内自带 `cordis.patch.yml`，不需要你再写 patch 文件。
 
 ### 作为 profile 自己 patch 层里的一行
 
-如果这个包已经是依赖，直接在 `$DSH_HOME/profiles/<名称>/cordis.patch.yml` 里加一行：
+如果这个包已经是依赖，但不想把它列为 bundle，可以自己在 `$DSH_HOME/profiles/<名称>/cordis.patch.yml` 里加一行：
 
 ```yaml
 - insert:

@@ -4,8 +4,10 @@
   "description": "Terminal startup status bar for DeepSeek Harness (dsh): shows which plugin a boot is loading, for how long, and how far it has gotten.",
   "license": "MIT",
   "type": "module",
+  "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "files": [
@@ -24,6 +26,14 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
     }
   },
   "keywords": [
